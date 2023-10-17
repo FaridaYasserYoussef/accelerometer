@@ -1,24 +1,62 @@
 import 'dart:async';
-
+import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:accelerometer_app/api_connection/api_connection.dart';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:http/http.dart' as http;
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class ClassifyPage extends StatefulWidget {
+  const ClassifyPage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ClassifyPage> createState() => _ClassifyPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _ClassifyPageState extends State<ClassifyPage> {
   bool button_state = false;
   String signalString = "";
+  String classificationString = "";
+  String probability = "";
+
+
   List<StreamSubscription<UserAccelerometerEvent>> _streamSubscriptions =
   <StreamSubscription<UserAccelerometerEvent>>[];
 
-  sendDataToServer(){
+  Future<void> sendDataToServer() async{
+    try{
+      var response  = await http.post(
+        Uri.parse(API.hostConnectClassify),
+          headers: {"Content-Type": "application/json"},
+        body: jsonEncode(
+            {
+              "input_string" : signalString.toString()
+            }
+        )
+      );
+       print(response.body);
+
+       if(response.statusCode == 200){
+         var decodedResBody = jsonDecode(response.body);
+         if(decodedResBody["success"] == true){
+            Fluttertoast.showToast(msg: "Successfully classified");
+            setState(() {
+              classificationString = decodedResBody["template_name"].toString();
+              probability = decodedResBody["probability"].toString();
+
+            });
+         }else{
+           Fluttertoast.showToast(msg: "error while classifying");
+         }
+
+       }
+
+
+    } catch(e){
+      print(e.toString());
+    }
 
   }
 
@@ -44,7 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
                ),
                child: InkWell(
                  borderRadius: BorderRadius.circular(30),
-                 onTap: (){
+                 onTap: () async{
                    setState(() {
                      button_state = !button_state;
                    });
@@ -72,7 +110,10 @@ class _MyHomePageState extends State<MyHomePage> {
                      for (StreamSubscription<UserAccelerometerEvent> subscription in _streamSubscriptions) {
                        subscription.cancel();
                      }
-                     sendDataToServer();
+
+                     await sendDataToServer();
+
+                     // sendDataToServer();
                      print(signalString);
                    }
                  },
@@ -86,7 +127,13 @@ class _MyHomePageState extends State<MyHomePage> {
                  ),
                ),
              ),
-           )
+           ),
+
+
+            SizedBox(height: 100,),
+            Text(classificationString != ""? "Template: "  + classificationString : ""),
+            Text(probability != ""? "Template: "  + probability : "")
+
           ],
         ),
       ),
