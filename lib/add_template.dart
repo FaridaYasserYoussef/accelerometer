@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:http/http.dart' as http;
 import 'api_connection/api_connection.dart';
+import 'location.dart';
 
 class AddTemplate extends StatefulWidget {
   const AddTemplate({Key? key}) : super(key: key);
@@ -18,10 +19,16 @@ class _AddTemplateState extends State<AddTemplate> {
   TextEditingController nameController =  TextEditingController();
   bool button_state = false;
   String signalString = "";
+  String signalStringgyro = "";
+  Location location = Location();
   List<StreamSubscription<UserAccelerometerEvent>> _streamSubscriptions =
   <StreamSubscription<UserAccelerometerEvent>>[];
 
+  List<StreamSubscription<GyroscopeEvent>> _streamSubscriptionsgyro =
+  <StreamSubscription<GyroscopeEvent>>[];
+
   Future<void> sendDataToServer() async{
+    await location.getCurrentLocation();
     try{
       print(API.addTemplateFunc);
       var response  = await http.post(
@@ -30,7 +37,11 @@ class _AddTemplateState extends State<AddTemplate> {
 
           body: jsonEncode({
             "input_string" : signalString.toString(),
-            "templateName" : nameController.text.toString()
+
+            "templateName" : nameController.text.toString(),
+            "longi" : location.longitude.toString(),
+            "lati" : location.latitude.toString()
+
           })
       );
       print(response.body);
@@ -38,7 +49,7 @@ class _AddTemplateState extends State<AddTemplate> {
       if(response.statusCode == 200){
         var decodedResBody = jsonDecode(response.body);
         if(decodedResBody["success"] == true){
-          Fluttertoast.showToast(msg: "Template successfully added");
+          Fluttertoast.showToast(msg: decodedResBody["message"]);
           setState(() {
           });
         }else{
@@ -51,6 +62,45 @@ class _AddTemplateState extends State<AddTemplate> {
     } catch(e){
       print(e.toString());
     }
+
+
+    try{
+      print(API.addGyroData);
+      var responseGyro  = await http.post(
+          Uri.parse(API.hostConnectAddGyroData),
+          headers: {"Content-Type": "application/json"},
+
+          body: jsonEncode({
+            "gyro_string" : signalStringgyro.toString(),
+            "templateName" : nameController.text.toString(),
+            "longi" : location.longitude.toString(),
+            "lati" : location.latitude.toString()
+          })
+      );
+      print(responseGyro.body);
+
+      if(responseGyro.statusCode == 200){
+        var decodedResBodyGyro = jsonDecode(responseGyro.body);
+        if(decodedResBodyGyro["success"] == true){
+          Fluttertoast.showToast(msg: decodedResBodyGyro["message"]);
+          setState(() {
+          });
+        }else{
+          Fluttertoast.showToast(msg: "error while adding gyro data");
+        }
+
+      }
+
+
+    } catch(e){
+      print(e.toString());
+    }
+
+
+
+
+
+
 
   }
 
@@ -91,7 +141,7 @@ class _AddTemplateState extends State<AddTemplate> {
                         userAccelerometerEvents.listen(
                               (UserAccelerometerEvent event) {
                             setState(() {
-                              signalString = signalString + "|" + (event.x.toString() + "~" + event.y.toString());
+                              signalString = signalString + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
 
                             });
                             print(event);
@@ -105,11 +155,39 @@ class _AddTemplateState extends State<AddTemplate> {
 
                     );
 
+
+                    _streamSubscriptionsgyro.add(
+                        gyroscopeEvents.listen(
+                              (GyroscopeEvent event) {
+                            setState(() {
+                              signalStringgyro = signalStringgyro + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
+
+                            });
+                            print(event);
+                          },
+                          onError: (error) {
+                            // Logic to handle error
+                            // Needed for Android in case sensor is not available
+                          },
+                          cancelOnError: true,
+                        )
+
+                    );
+
+
+
                   }else{
 
                     for (StreamSubscription<UserAccelerometerEvent> subscription in _streamSubscriptions) {
                       subscription.cancel();
                     }
+
+                    for (StreamSubscription<GyroscopeEvent> subscriptiongyro in _streamSubscriptionsgyro) {
+                      subscriptiongyro.cancel();
+                    }
+                    print(signalString);
+                    print(signalStringgyro);
+
                     await sendDataToServer();
                     print(signalString);
                   }

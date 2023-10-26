@@ -43,7 +43,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: 50,),
+          SizedBox(width: 80,),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Material(

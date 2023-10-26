@@ -18,12 +18,16 @@ class ClassifyPage extends StatefulWidget {
 class _ClassifyPageState extends State<ClassifyPage> {
   bool button_state = false;
   String signalString = "";
+  // String signalStringgyro = "";
+
   String classificationString = "";
   String probability = "";
 
 
   List<StreamSubscription<UserAccelerometerEvent>> _streamSubscriptions =
   <StreamSubscription<UserAccelerometerEvent>>[];
+  // List<StreamSubscription<GyroscopeEvent>> _streamSubscriptionsgyro =
+  // <StreamSubscription<GyroscopeEvent>>[];
 
   Future<void> sendDataToServer() async{
     try{
@@ -32,7 +36,8 @@ class _ClassifyPageState extends State<ClassifyPage> {
           headers: {"Content-Type": "application/json"},
         body: jsonEncode(
             {
-              "input_string" : signalString.toString()
+              "input_string" : signalString.toString(),
+              // "gyro_string" : signalStringgyro.toString()
             }
         )
       );
@@ -91,7 +96,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
                          userAccelerometerEvents.listen(
                                (UserAccelerometerEvent event) {
                              setState(() {
-                               signalString = signalString + "|" + (event.x.toString() + "~" + event.y.toString());
+                               signalString = signalString + "|" + (event.x.toString() + "~" + event.y.toString() +  "~" + event.z.toString());
 
                              });
                              print(event);
@@ -105,11 +110,38 @@ class _ClassifyPageState extends State<ClassifyPage> {
 
                      );
 
+
+
+                     // _streamSubscriptionsgyro.add(
+                     //     gyroscopeEvents.listen(
+                     //           (GyroscopeEvent event) {
+                     //         setState(() {
+                     //           signalStringgyro = signalStringgyro + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
+                     //
+                     //         });
+                     //         print(event);
+                     //       },
+                     //       onError: (error) {
+                     //         // Logic to handle error
+                     //         // Needed for Android in case sensor is not available
+                     //       },
+                     //       cancelOnError: true,
+                     //     )
+                     //
+                     // );
+
                    }else{
 
                      for (StreamSubscription<UserAccelerometerEvent> subscription in _streamSubscriptions) {
                        subscription.cancel();
                      }
+
+                     // for (StreamSubscription<GyroscopeEvent> subscriptiongyro in _streamSubscriptionsgyro) {
+                     //   subscriptiongyro.cancel();
+                     // }
+                     print(signalString);
+                     // print(signalStringgyro);
+
 
                      await sendDataToServer();
 
@@ -132,7 +164,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
 
             SizedBox(height: 100,),
             Text(classificationString != ""? "Template: "  + classificationString : ""),
-            Text(probability != ""? "Template: "  + probability : "")
+            Text(probability != ""? "Probability: "  + probability : "")
 
           ],
         ),
