@@ -20,12 +20,18 @@ class _AddTemplateState extends State<AddTemplate> {
   bool button_state = false;
   String signalString = "";
   String signalStringgyro = "";
+  String signalStringmagneto = "";
+
   Location location = Location();
   List<StreamSubscription<UserAccelerometerEvent>> _streamSubscriptions =
   <StreamSubscription<UserAccelerometerEvent>>[];
 
   List<StreamSubscription<GyroscopeEvent>> _streamSubscriptionsgyro =
   <StreamSubscription<GyroscopeEvent>>[];
+
+
+  List<StreamSubscription<MagnetometerEvent>> _streamSubscriptionsmagneto =
+  <StreamSubscription<MagnetometerEvent>>[];
 
   Future<void> sendDataToServer() async{
     await location.getCurrentLocation();
@@ -97,6 +103,37 @@ class _AddTemplateState extends State<AddTemplate> {
     }
 
 
+    try{
+      print(API.addMagnetoData);
+      var responseMagneto  = await http.post(
+          Uri.parse(API.hostConnectAddMagnetoData),
+          headers: {"Content-Type": "application/json"},
+
+          body: jsonEncode({
+            "magnet_string" : signalStringmagneto.toString(),
+            "templateName" : nameController.text.toString(),
+            "longi" : location.longitude.toString(),
+            "lati" : location.latitude.toString()
+          })
+      );
+      print(responseMagneto.body);
+
+      if(responseMagneto.statusCode == 200){
+        var decodedResBodyMagneto = jsonDecode(responseMagneto.body);
+        if(decodedResBodyMagneto["success"] == true){
+          Fluttertoast.showToast(msg: decodedResBodyMagneto["message"]);
+          setState(() {
+          });
+        }else{
+          Fluttertoast.showToast(msg: "error while adding magneto data");
+        }
+
+      }
+
+
+    } catch(e){
+      print(e.toString());
+    }
 
 
 
@@ -175,6 +212,25 @@ class _AddTemplateState extends State<AddTemplate> {
                     );
 
 
+                    _streamSubscriptionsmagneto.add(
+                        magnetometerEvents.listen(
+                              (MagnetometerEvent event) {
+                            setState(() {
+                              signalStringmagneto = signalStringmagneto + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
+
+                            });
+                            print(event);
+                          },
+                          onError: (error) {
+                            // Logic to handle error
+                            // Needed for Android in case sensor is not available
+                          },
+                          cancelOnError: true,
+                        )
+
+                    );
+
+
 
                   }else{
 
@@ -185,8 +241,15 @@ class _AddTemplateState extends State<AddTemplate> {
                     for (StreamSubscription<GyroscopeEvent> subscriptiongyro in _streamSubscriptionsgyro) {
                       subscriptiongyro.cancel();
                     }
+
+                    for (StreamSubscription<MagnetometerEvent> subscriptionmagneto in _streamSubscriptionsmagneto) {
+                      subscriptionmagneto.cancel();
+                    }
+
                     print(signalString);
                     print(signalStringgyro);
+                    print(signalStringmagneto);
+
 
                     await sendDataToServer();
                     print(signalString);

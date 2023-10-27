@@ -18,7 +18,9 @@ class ClassifyPage extends StatefulWidget {
 class _ClassifyPageState extends State<ClassifyPage> {
   bool button_state = false;
   String signalString = "";
-  // String signalStringgyro = "";
+  String signalStringgyro = "";
+  String signalStringmagneto = "";
+
 
   String classificationString = "";
   String probability = "";
@@ -26,8 +28,14 @@ class _ClassifyPageState extends State<ClassifyPage> {
 
   List<StreamSubscription<UserAccelerometerEvent>> _streamSubscriptions =
   <StreamSubscription<UserAccelerometerEvent>>[];
-  // List<StreamSubscription<GyroscopeEvent>> _streamSubscriptionsgyro =
-  // <StreamSubscription<GyroscopeEvent>>[];
+
+  List<StreamSubscription<GyroscopeEvent>> _streamSubscriptionsgyro =
+  <StreamSubscription<GyroscopeEvent>>[];
+
+
+
+  List<StreamSubscription<MagnetometerEvent>> _streamSubscriptionsmagneto =
+  <StreamSubscription<MagnetometerEvent>>[];
 
   Future<void> sendDataToServer() async{
     try{
@@ -37,7 +45,9 @@ class _ClassifyPageState extends State<ClassifyPage> {
         body: jsonEncode(
             {
               "input_string" : signalString.toString(),
-              // "gyro_string" : signalStringgyro.toString()
+              "gyro_string" : signalStringgyro.toString(),
+              "magnet_string" : signalStringmagneto.toString()
+
             }
         )
       );
@@ -112,23 +122,44 @@ class _ClassifyPageState extends State<ClassifyPage> {
 
 
 
-                     // _streamSubscriptionsgyro.add(
-                     //     gyroscopeEvents.listen(
-                     //           (GyroscopeEvent event) {
-                     //         setState(() {
-                     //           signalStringgyro = signalStringgyro + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
-                     //
-                     //         });
-                     //         print(event);
-                     //       },
-                     //       onError: (error) {
-                     //         // Logic to handle error
-                     //         // Needed for Android in case sensor is not available
-                     //       },
-                     //       cancelOnError: true,
-                     //     )
-                     //
-                     // );
+                     _streamSubscriptionsgyro.add(
+                         gyroscopeEvents.listen(
+                               (GyroscopeEvent event) {
+                             setState(() {
+                               signalStringgyro = signalStringgyro + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
+
+                             });
+                             print(event);
+                           },
+                           onError: (error) {
+                             // Logic to handle error
+                             // Needed for Android in case sensor is not available
+                           },
+                           cancelOnError: true,
+                         )
+
+                     );
+
+
+                     _streamSubscriptionsmagneto.add(
+                         magnetometerEvents.listen(
+                               (MagnetometerEvent event) {
+                             setState(() {
+                               signalStringmagneto = signalStringmagneto + "|" + (event.x.toString() + "~" + event.y.toString() + "~" + event.z.toString());
+
+                             });
+                             print(event);
+                           },
+                           onError: (error) {
+                             // Logic to handle error
+                             // Needed for Android in case sensor is not available
+                           },
+                           cancelOnError: true,
+                         )
+
+                     );
+
+
 
                    }else{
 
@@ -136,11 +167,17 @@ class _ClassifyPageState extends State<ClassifyPage> {
                        subscription.cancel();
                      }
 
-                     // for (StreamSubscription<GyroscopeEvent> subscriptiongyro in _streamSubscriptionsgyro) {
-                     //   subscriptiongyro.cancel();
-                     // }
+                     for (StreamSubscription<GyroscopeEvent> subscriptiongyro in _streamSubscriptionsgyro) {
+                       subscriptiongyro.cancel();
+                     }
+
+                     for (StreamSubscription<MagnetometerEvent> subscriptionmagneto in _streamSubscriptionsmagneto) {
+                       subscriptionmagneto.cancel();
+                     }
+
                      print(signalString);
-                     // print(signalStringgyro);
+                     print(signalStringgyro);
+                     print(signalStringmagneto);
 
 
                      await sendDataToServer();
