@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:http/http.dart' as http;
 
+import 'location.dart';
+
 class ClassifyPage extends StatefulWidget {
   const ClassifyPage({super.key, required this.title});
 
@@ -20,6 +22,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
   String signalString = "";
   String signalStringgyro = "";
   String signalStringmagneto = "";
+  Location location = Location();
 
 
   String classificationString = "";
@@ -38,6 +41,8 @@ class _ClassifyPageState extends State<ClassifyPage> {
   <StreamSubscription<MagnetometerEvent>>[];
 
   Future<void> sendDataToServer() async{
+    await location.getCurrentLocation();
+
     try{
       var response  = await http.post(
         Uri.parse(API.hostConnectClassify),
@@ -46,7 +51,9 @@ class _ClassifyPageState extends State<ClassifyPage> {
             {
               "input_string" : signalString.toString(),
               "gyro_string" : signalStringgyro.toString(),
-              "magnet_string" : signalStringmagneto.toString()
+              "magnet_string" : signalStringmagneto.toString(),
+              "longi" : location.longitude.toString(),
+              "lati" : location.latitude.toString()
 
             }
         )
@@ -59,7 +66,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
             Fluttertoast.showToast(msg: "Successfully classified");
             setState(() {
               classificationString = decodedResBody["template_name"].toString();
-              probability = decodedResBody["probability"].toString();
+              probability = decodedResBody["alignment_similarity_score"].toString();
 
             });
          }else{
@@ -201,7 +208,7 @@ class _ClassifyPageState extends State<ClassifyPage> {
 
             SizedBox(height: 100,),
             Text(classificationString != ""? "Template: "  + classificationString : ""),
-            Text(probability != ""? "Probability: "  + probability : "")
+            Text(probability != ""? "Alignment Similarity Score: "  + probability : "")
 
           ],
         ),

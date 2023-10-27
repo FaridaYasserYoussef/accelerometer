@@ -1,6 +1,6 @@
 class API{
   // connection to api service
-  static const hostConnect = "http://192.168.1.14:8000";
+  static const hostConnect = "http://ec2-52-90-141-43.compute-1.amazonaws.com";
   static const appName = "api";
   static const classifyFunc = "classifyTemplate";
   static const addTemplateFunc = "add_AccelerometerData";
